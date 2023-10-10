@@ -1,0 +1,19 @@
+.Register{
+    height: fit-content;
+    justify-content: flex-start;
+    display: flex;
+    background:  rgba(11, 194, 207, 0.57);
+    width: 30rem;
+    margin: 15rem auto;
+    border-radius: 10px;
+    align-items: flex-start;
+}
+
+.Register .container{
+    padding: 2rem;
+}
+
+.Register form{
+    display: grid;
+    row-gap: 1rem;
+}

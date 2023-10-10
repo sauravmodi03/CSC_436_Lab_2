@@ -1,0 +1,23 @@
+.Home .container{
+    width: 40rem;
+}
+
+.Home .add-btn{
+    border: navajowhite;
+    width: 100%;
+    border-radius: 5px;
+    height: 100%;
+}
+
+.Home .inpt-add{
+    border-bottom: 1px solid #aeabab;
+}
+
+.card-body .card{
+    margin-top: 1rem;
+}
+
+form{
+    display: grid;
+    gap: 1rem;
+}

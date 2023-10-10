@@ -1,0 +1,15 @@
+.Login{
+    width: 25rem;
+    margin: 15rem auto;
+    align-items: flex-start;
+    background-color: rgba(11, 194, 207, 0.57);
+}
+
+.Login .container{
+    padding: 2rem;
+}
+
+.Login form{
+    display: grid;
+    row-gap: 1rem;
+}
