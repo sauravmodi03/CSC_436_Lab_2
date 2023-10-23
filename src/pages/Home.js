@@ -1,63 +1,94 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useReducer, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import '../css/Home.css';
 
 
-function Home() {
-
-    const location = useLocation();
+function Home({ activeUser, processLogout }) {
 
     var [todo, setTodo] = useState('');
     var [description, setDescription] = useState('');
-    var [todos, setTodos] = useState([]);
-    var [id, setId] = useState(0);
-    var [author, setAuthor] = useState('');
+    const author = activeUser?.user?.email;
+
+    const navigate = useNavigate();
+
+
+    const todoReducer = (todos, action) => {
+        switch (action.type) {
+            case "add":
+                return [...todos, action.todo];
+            case "toggle":
+                const newTodos = todos.map((todo, i) => {
+                    if (i === action.index) {
+                        todo.isCompleted = action.checked;
+                        todo.dateComplete = action.checked ? new Date().toLocaleString() : null
+                    }
+                    return todo;
+                });
+                return [...newTodos];
+            case "delete":
+                // const list = todos.filter((todo, i) => i !== action.index);
+                const list = [...todos.slice(0, action.index), ...todos.slice(action.index + 1)]
+                return [...list];
+            default:
+                return todos;
+        }
+
+    }
+
+    const [todos, todoDispatcher] = useReducer(todoReducer, activeUser.todos);
 
 
     const addTodo = (e) => {
         e.preventDefault();
 
-        setId(id + 1);
+        //Creating todo object
+        const temp = {
+            "name": todo,
+            "author": author,
+            "description": description,
+            "isCompleted": false,
+            "dateCreated": new Date().toLocaleString(),
+            "dateComplete": null
+        }
 
-        todos.push(
-            {
-                "id": id,
-                "name": todo,
-                "author": author,
-                "description": description,
-                "isCompleted": false,
-                "dateCreated": new Date().toLocaleString(),
-                "dateComplete": null
-            }
-        )
+        //Calling todo dispatcher to add todo in global list
+        todoDispatcher({ type: "add", todo: temp })
+
+        //Resetting todo form
         setTodo('');
         setDescription('');
     }
 
-    const updateTodo = (index, value) => {
+    const updateTodo = (e, i, value) => {
+        todoDispatcher({ type: 'toggle', index: i, checked: value })
+    }
 
-        const updated = todos.map(todo => {
-            if (todo.id === index) {
-                todo.isCompleted = !todo.isCompleted;
-                todo.dateComplete = todo.isCompleted ? new Date().toLocaleString() : null
-            }
-            return todo
-        })
+    const deleteTodo = (e, i) => {
+        todoDispatcher({ type: "delete", index: i });
+    }
 
-        setTodos(updated);
+    const logout = () => {
+        alert("You have succesfully logged out...!!!")
+        activeUser.todos = todos;
+        activeUser.state = "LOGGED_OUT";
+        processLogout(activeUser)
+        navigate("/");
+
     }
 
     useEffect(() => {
-        setAuthor(location.state.username);
-    }, [location.state.username]);
+        if (activeUser.user === undefined) {
+            navigate("/");
+        }
+    }, [todos, activeUser, navigate]);
 
     return (
         <div className="Home wrapper">
             <div className="container">
                 <div className="row">
                     <div className="col">Hi {author}!</div>
-                    <div className="col"><Link to="/">Logout</Link></div>
+                    <div className="col"><button onClick={() => logout()} >Logout</button></div>
                 </div>
                 <div className="row card">
                     <div className="card-header">Todos</div>
@@ -74,11 +105,11 @@ function Home() {
                             </div>
                         </form>
                         {
-                            todos.map((todo, i) => {
-                                return <div key={i} className="card">
+                            todos?.map ? todos.map((todo, i) => {
+                                return <div key={todo.author + "_" + i} className="card">
                                     <div className="row">
-                                        <div className="col-1"><input type="checkbox" value={todo.isCompleted} onChange={(e) => updateTodo(todo.id, todo.isCompleted)} /></div>
-                                        <div className="col">
+                                        <div className="col-1"><input type="checkbox" checked={todo.isCompleted} onChange={(e) => updateTodo(e, i, e.target.checked)} /></div>
+                                        <div className="col-9">
                                             <div className="row">
                                                 <span className="col-4">Title: </span><div className="col">{todo.name}</div>
                                             </div>
@@ -98,9 +129,13 @@ function Home() {
                                                 <span className="col-4">Date Completed: </span><div className="col">{todo.dateComplete}</div>
                                             </div>
                                         </div>
+                                        <div className="col-1">
+                                            <button type="button" className="btn btn-primary d-flex" onClick={(e) => deleteTodo(e, i)} placeholder="Delete" >Delete</button>
+                                        </div>
                                     </div>
                                 </div>
                             })
+                                : null
                         }
                     </div>
                 </div>

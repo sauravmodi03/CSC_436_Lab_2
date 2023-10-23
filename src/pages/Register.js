@@ -7,7 +7,6 @@ import { useState } from "react";
 function Register({ newUser }) {
 
     const navigate = useNavigate();
-    // const alert = useAlert();
 
     const [fname, setFname] = useState('');
     const [lname, setLname] = useState('');
@@ -15,17 +14,26 @@ function Register({ newUser }) {
     const [password, setPassword] = useState('');
     const [cnfPassword, setCnfPassword] = useState('');
 
-    const user = {
-        fname: fname,
-        lname: lname,
-        email: email,
-        password: password
+    const _user = {
+        state: "LOGGED_OUT",
+        todos: [],
+        user: {
+            fname: fname,
+            lname: lname,
+            email: email,
+            password: password
+        }
     }
 
-    const validateRegister = () => {
-        // alert.show('Successfully registered !')
-        newUser(user);
-        navigate('/');
+    const validateRegister = (e) => {
+        e.preventDefault();
+        if (password === cnfPassword) {
+            alert('Successfully registered !');
+            newUser(_user);
+            navigate('/');
+        } else {
+            alert("Password did not match..!!");
+        }
     }
 
     return (
@@ -52,7 +60,7 @@ function Register({ newUser }) {
                             <input type="submit" name="Register" onClick={() => navigate('/')} value="Cancel" />
                         </div>
                         <div className="col btn">
-                            <input type="submit" name="Register" onClick={() => validateRegister()} value="Register" />
+                            <input type="submit" name="Register" onClick={(e) => validateRegister(e)} value="Register" />
                         </div>
                     </div>
                 </form>
