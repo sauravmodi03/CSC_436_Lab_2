@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 
 import '../css/Register.css';
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { StateContext } from "../context";
+import { useResource } from "react-request-hook";
 
 
-function Register({ newUser }) {
+function Register() {
 
     const navigate = useNavigate();
 
@@ -15,26 +17,49 @@ function Register({ newUser }) {
     const [cnfPassword, setCnfPassword] = useState('');
 
     const _user = {
-        state: "LOGGED_OUT",
-        todos: [],
-        user: {
-            fname: fname,
-            lname: lname,
-            email: email,
-            password: password
-        }
+        fname: fname,
+        lname: lname,
+        email: email,
+        password: password
     }
+
+    const stateContext = useContext(StateContext)
+
+    const [registerResponse, registerUser] = useResource((_user) => ({
+        url: "/users",
+        method: 'post',
+        data: _user
+    }));
 
     const validateRegister = (e) => {
         e.preventDefault();
         if (password === cnfPassword) {
-            alert('Successfully registered !');
-            newUser(_user);
-            navigate('/');
+
+            registerUser(_user);
+            // console.log(_user);
+
         } else {
             alert("Password did not match..!!");
         }
     }
+
+    function processRegsiter(responseData) {
+        if (responseData && responseData.data) {
+            alert('Successfully registered !');
+            stateContext.userDispatch({ type: 'add', user: _user });
+            navigate('/');
+        } else if (responseData?.error) {
+            console.log(responseData.error);
+            var errorMsg = responseData?.error?.data;
+            if (errorMsg === undefined)
+                errorMsg = "Error Occured."
+            alert(errorMsg);
+        }
+    }
+
+    useEffect(() => {
+        processRegsiter(registerResponse);
+    }, [registerResponse])
 
     return (
         <div className="Register wrapper rounded-3 d-flex justify-content-center">

@@ -1,9 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import '../css/Login.css';
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { StateContext } from "../context";
+import { useResource } from "react-request-hook";
 
 
-function Login({ users, loggedUser }) {
+function Login() {
 
     const navigate = useNavigate();
 
@@ -11,20 +13,47 @@ function Login({ users, loggedUser }) {
     const [password, setPassword] = useState('');
     const [errorMsg] = useState('');
 
+    const stateContext = useContext(StateContext);
 
-    const validate = (event) => {
+    const [loginResponse, login] = useResource((loginRequest) => ({
+        url: '/login',
+        method: 'post',
+        data: loginRequest
+    }))
+
+    async function validate(event) {
         event.preventDefault();
-        console.log("login", users);
-        const obj = users.filter((obj) => obj.user.email === username && obj.user.password === password);
 
-        if (obj[0]?.user) {
-            loggedUser(obj[0].user.email);
-            navigate('/home');
+        const loginRequest = {
+            email: username,
+            password: password
+        }
+
+        login(loginRequest)
+
+        if (loginResponse?.data) {
+
         } else {
-            alert("Invalid credentials..!!!");
+
         }
 
     }
+
+    useEffect(() => {
+
+        if (loginResponse?.data) {
+            stateContext.userDispatch({ type: "login", username: loginResponse.data.user.email })
+            navigate('/home');
+        } else if (loginResponse?.error) {
+            console.log(loginResponse.error);
+            var errorMsg = loginResponse?.error?.data;
+            if (errorMsg === undefined)
+                errorMsg = "Invalid Credentials."
+            alert(errorMsg);
+        }
+
+    }, [loginResponse])
+
 
     return (
         <>
@@ -59,7 +88,7 @@ function Login({ users, loggedUser }) {
             </div>
             <div className="container card">
                 <span>Note: For testing purpose a test user is already created with below credentials.</span>
-                <span>Username : test@test.com, Password : test</span>
+                <span>Username : test@test.com, Password : test123</span>
                 <span>New user's can still be registerd and state will be maintained individually for each user.</span>
             </div>
         </>

@@ -1,33 +1,71 @@
-import { useEffect, useReducer, useState } from "react";
+import { useContext, useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import '../css/Home.css';
+import { StateContext } from "../context";
+import { useResource } from "react-request-hook";
 
 
 function Home({ activeUser, processLogout }) {
 
     var [todo, setTodo] = useState('');
     var [description, setDescription] = useState('');
-    const author = activeUser?.user?.email;
+
+    const stateContext = useContext(StateContext);
+
+    const author = stateContext?.activeUser?.email;
+
+    const [todosResponse, getTodos] = useResource(() => ({
+        url: `/todos?author=${author}`,
+        method: "get"
+    }));
+
+    useEffect(getTodos, []);
+
+    const [addResponse, addNewTodo] = useResource((todo) => ({
+        url: '/todos',
+        method: 'post',
+        data: todo
+    }))
+
+    // useEffect(addNewTodo => {
+    //     if (addResponse?.data) {
+    //         todoDispatcher({ type: "add", todos: addResponse.data });
+    //     }
+    // })
+
+    const [updatedTodo, updateTodoResource] = useResource((todo) => ({
+        url: `/todos/${todo.id}`,
+        method: 'put',
+        data: todo
+    }));
+
+    const [deleteResponse, deleteTodoResource] = useResource((id) => ({
+        url: `/todos/${id}`,
+        method: 'delete'
+    }));
+
+
+
+
 
     const navigate = useNavigate();
 
-
     const todoReducer = (todos, action) => {
         switch (action.type) {
+            case "init":
+                return [...todos, ...action.todos]
             case "add":
                 return [...todos, action.todo];
-            case "toggle":
-                const newTodos = todos.map((todo, i) => {
-                    if (i === action.index) {
-                        todo.isCompleted = action.checked;
-                        todo.dateComplete = action.checked ? new Date().toLocaleString() : null
+            case "update":
+                const listTodos = todos.map((obj) => {
+                    if (obj.id === action.todo.id) {
+                        return action.todo;
                     }
-                    return todo;
-                });
-                return [...newTodos];
+                    return obj;
+                })
+                return [...listTodos];
             case "delete":
-                // const list = todos.filter((todo, i) => i !== action.index);
                 const list = [...todos.slice(0, action.index), ...todos.slice(action.index + 1)]
                 return [...list];
             default:
@@ -36,8 +74,7 @@ function Home({ activeUser, processLogout }) {
 
     }
 
-    const [todos, todoDispatcher] = useReducer(todoReducer, activeUser.todos);
-
+    const [todos, todoDispatcher] = useReducer(todoReducer, []);
 
     const addTodo = (e) => {
         e.preventDefault();
@@ -52,36 +89,42 @@ function Home({ activeUser, processLogout }) {
             "dateComplete": null
         }
 
-        //Calling todo dispatcher to add todo in global list
-        todoDispatcher({ type: "add", todo: temp })
+        addNewTodo(temp);
+
+        if (addResponse?.data) {
+            //Calling todo dispatcher to add todo in global list
+            todoDispatcher({ type: "add", todos: addResponse.data });
+        }
 
         //Resetting todo form
         setTodo('');
         setDescription('');
     }
 
-    const updateTodo = (e, i, value) => {
-        todoDispatcher({ type: 'toggle', index: i, checked: value })
+    const updateTodo = (e, i, value, todo) => {
+        todo.isCompleted = value;
+        todo.dateComplete = value ? new Date().toLocaleString() : null
+        updateTodoResource(todo);
+
     }
 
-    const deleteTodo = (e, i) => {
-        todoDispatcher({ type: "delete", index: i });
+    const deleteTodo = (e, i, id) => {
+        deleteTodoResource(id)
     }
 
     const logout = () => {
-        alert("You have succesfully logged out...!!!")
-        activeUser.todos = todos;
-        activeUser.state = "LOGGED_OUT";
-        processLogout(activeUser)
+        stateContext.userDispatch({ type: "logout" });
+        alert("You have succesfully logged out...!!!");
         navigate("/");
-
     }
 
     useEffect(() => {
-        if (activeUser.user === undefined) {
+        getTodos();
+        if (!stateContext?.activeUser?.email) {
             navigate("/");
         }
-    }, [todos, activeUser, navigate]);
+
+    }, [todos, activeUser, navigate, addResponse, updatedTodo, deleteResponse]);
 
     return (
         <div className="Home wrapper">
@@ -105,10 +148,10 @@ function Home({ activeUser, processLogout }) {
                             </div>
                         </form>
                         {
-                            todos?.map ? todos.map((todo, i) => {
+                            todosResponse?.data?.map ? todosResponse.data.map((todo, i) => {
                                 return <div key={todo.author + "_" + i} className="card">
                                     <div className="row">
-                                        <div className="col-1"><input type="checkbox" checked={todo.isCompleted} onChange={(e) => updateTodo(e, i, e.target.checked)} /></div>
+                                        <div className="col-1"><input type="checkbox" checked={todo.isCompleted} onChange={(e) => updateTodo(e, i, e.target.checked, todo)} /></div>
                                         <div className="col-9">
                                             <div className="row">
                                                 <span className="col-4">Title: </span><div className="col">{todo.name}</div>
@@ -130,7 +173,7 @@ function Home({ activeUser, processLogout }) {
                                             </div>
                                         </div>
                                         <div className="col-1">
-                                            <button type="button" className="btn btn-primary d-flex" onClick={(e) => deleteTodo(e, i)} placeholder="Delete" >Delete</button>
+                                            <button type="button" className="btn btn-primary d-flex" onClick={(e) => deleteTodo(e, i, todo.id)} placeholder="Delete" >Delete</button>
                                         </div>
                                     </div>
                                 </div>

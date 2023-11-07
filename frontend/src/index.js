@@ -5,11 +5,20 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
+import { RequestProvider } from 'react-request-hook';
+import axios from 'axios';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
+export const axiosInstance = axios.create({
+  baseURL: 'http://localhost:4000/'
+})
+
 root.render(
   <React.StrictMode>
-    <App />
+    <RequestProvider value={axiosInstance}>
+      <App />
+    </RequestProvider>
   </React.StrictMode>
 );
 
