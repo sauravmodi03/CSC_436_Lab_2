@@ -7,13 +7,6 @@
       "lname": "test",
       "email": "test@test.com",
       "password": "$2a$10$.pCXC7pUJn6wiNhKe.szouZ3GnPYz77vhOxixZOTxaOAIzgTpEuWW"
-    },
-    {
-      "email": "a@a.com",
-      "password": "$2a$10$3jHeJV/skq7ZMXaVqHQsc.iHlRpOBenE2tmOQkQT6zF7BXgpbRTe.",
-      "fname": "a",
-      "lname": "a",
-      "id": 2
     }
   ],
   "todos": [
@@ -26,51 +19,6 @@
       "dateCreated": "11/4/2023, 4:11:48 PM",
       "dateComplete": "11/5/2023, 2:22:38 PM",
       "isCompleted": true
-    },
-    {
-      "name": "aa",
-      "author": "test@test.com",
-      "description": "",
-      "isCompleted": false,
-      "dateCreated": "11/5/2023, 2:34:53 PM",
-      "dateComplete": null,
-      "id": 2
-    },
-    {
-      "name": "tt",
-      "author": "a@a.com",
-      "description": "",
-      "isCompleted": false,
-      "dateCreated": "11/5/2023, 2:40:55 PM",
-      "dateComplete": null,
-      "id": 3
-    },
-    {
-      "name": "tq",
-      "author": "a@a.com",
-      "description": "",
-      "isCompleted": true,
-      "dateCreated": "11/5/2023, 2:40:57 PM",
-      "dateComplete": "11/5/2023, 2:41:01 PM",
-      "id": 4
-    },
-    {
-      "name": "ty",
-      "author": "a@a.com",
-      "description": "",
-      "isCompleted": false,
-      "dateCreated": "11/5/2023, 2:41:00 PM",
-      "dateComplete": null,
-      "id": 5
-    },
-    {
-      "name": "qq",
-      "author": "a@a.com",
-      "description": "",
-      "isCompleted": false,
-      "dateCreated": "11/6/2023, 2:21:34 PM",
-      "dateComplete": null,
-      "id": 6
     }
   ]
 }
