@@ -9,49 +9,46 @@ function Login() {
 
     const navigate = useNavigate();
 
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMsg] = useState('');
 
-    const stateContext = useContext(StateContext);
+    const { state, dispatch: dispatchUser } = useContext(StateContext);
 
     const [loginResponse, login] = useResource((loginRequest) => ({
-        url: '/login',
+        url: '/auth/login',
         method: 'post',
-        data: loginRequest
+        data: loginRequest,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json',
+        }
     }))
 
     async function validate(event) {
         event.preventDefault();
 
         const loginRequest = {
-            email: username,
+            username: email,
             password: password
         }
-
-        login(loginRequest)
-
-        if (loginResponse?.data) {
-
-        } else {
-
-        }
+        login(loginRequest);
 
     }
 
     useEffect(() => {
-
-        if (loginResponse?.data) {
-            stateContext.userDispatch({ type: "login", username: loginResponse.data.user.email })
-            navigate('/home');
-        } else if (loginResponse?.error) {
-            console.log(loginResponse.error);
-            var errorMsg = loginResponse?.error?.data;
-            if (errorMsg === undefined)
-                errorMsg = "Invalid Credentials."
-            alert(errorMsg);
+        if (loginResponse && loginResponse.isLoading === false && (loginResponse.data || loginResponse.error)) {
+            if (loginResponse.error) {
+                alert("Login failed, please try again later." + "\nError: " + loginResponse.error.message);
+            } else {
+                dispatchUser({
+                    type: "LOGIN",
+                    username: email,
+                    access_token: loginResponse.data.access_token
+                })
+                navigate('/home');
+            }
         }
-
     }, [loginResponse])
 
 
@@ -62,7 +59,7 @@ function Login() {
                     <div className="form">
                         <form onSubmit={validate}>
                             <div className="row">
-                                <div className="col"><input type="text" required placeholder="Username/Email" value={username} onChange={e => setUsername(e.target.value)} /></div>
+                                <div className="col"><input type="text" required placeholder="Username/Email" value={email} onChange={e => setEmail(e.target.value)} /></div>
                             </div>
                             <div className="row">
                                 <div className="col"><input type="password" required placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} /></div>
@@ -84,12 +81,6 @@ function Login() {
                         </form>
                     </div>
                 </div>
-
-            </div>
-            <div className="container card">
-                <span>Note: For testing purpose a test user is already created with below credentials.</span>
-                <span>Username : test@test.com, Password : test123</span>
-                <span>New user's can still be registerd and state will be maintained individually for each user.</span>
             </div>
         </>
     );

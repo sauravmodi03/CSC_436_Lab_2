@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import '../css/Register.css';
-import { useContext, useEffect, useState } from "react";
-import { StateContext } from "../context";
+import { useEffect, useState } from "react";
 import { useResource } from "react-request-hook";
 
 
@@ -19,46 +18,31 @@ function Register() {
     const _user = {
         fname: fname,
         lname: lname,
-        email: email,
-        password: password
+        username: email,
+        password: password,
+        cnfPassword: cnfPassword
     }
 
-    const stateContext = useContext(StateContext)
-
-    const [registerResponse, registerUser] = useResource((_user) => ({
-        url: "/users",
+    const [registerResponse, registerUser] = useResource(() => ({
+        url: "auth/register",
         method: 'post',
         data: _user
     }));
 
     const validateRegister = (e) => {
         e.preventDefault();
-        if (password === cnfPassword) {
-
-            registerUser(_user);
-            // console.log(_user);
-
-        } else {
-            alert("Password did not match..!!");
-        }
-    }
-
-    function processRegsiter(responseData) {
-        if (responseData && responseData.data) {
-            alert('Successfully registered !');
-            stateContext.userDispatch({ type: 'add', user: _user });
-            navigate('/');
-        } else if (responseData?.error) {
-            console.log(responseData.error);
-            var errorMsg = responseData?.error?.data;
-            if (errorMsg === undefined)
-                errorMsg = "Error Occured."
-            alert(errorMsg);
-        }
+        registerUser();
     }
 
     useEffect(() => {
-        processRegsiter(registerResponse);
+        console.log(" reg respon : " + JSON.stringify(registerResponse));
+        if (registerResponse && registerResponse.isLoading === false && (registerResponse.data || registerResponse.error)) {
+            if (registerResponse.error) {
+                alert("Login failed, please try again later." + "\nError: " + registerResponse.error.message);
+            } else {
+                navigate('/');
+            }
+        }
     }, [registerResponse])
 
     return (

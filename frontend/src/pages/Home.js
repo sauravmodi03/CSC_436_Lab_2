@@ -1,4 +1,4 @@
-import { useContext, useEffect, useReducer, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import '../css/Home.css';
@@ -6,95 +6,97 @@ import { StateContext } from "../context";
 import { useResource } from "react-request-hook";
 
 
-function Home({ activeUser, processLogout }) {
+function Home() {
 
+    const { state, dispatch: dispatcher } = useContext(StateContext);
     var [todo, setTodo] = useState('');
     var [description, setDescription] = useState('');
+    var [author] = useState(state?.user?.username);
 
-    const stateContext = useContext(StateContext);
 
-    const author = stateContext?.activeUser?.email;
+    const { user, todos } = state;
 
     const [todosResponse, getTodos] = useResource(() => ({
-        url: `/todos?author=${author}`,
-        method: "get"
+        url: "/todo",
+        method: "get",
+        headers: { Authorization: `${state.user.access_token}` },
     }));
 
-    useEffect(getTodos, []);
+    useEffect(() => { getTodos(); }, [state?.user?.access_token]);
+
+    useEffect(() => {
+        if (todosResponse && todosResponse.isLoading === false && todosResponse.data) {
+            dispatcher({
+                type: "GET_TODOS",
+                todos: todosResponse.data.reverse(),
+            });
+        }
+    }, [todosResponse]);
+
+
 
     const [addResponse, addNewTodo] = useResource((todo) => ({
-        url: '/todos',
+        url: '/todo',
         method: 'post',
-        data: todo
-    }))
-
-    // useEffect(addNewTodo => {
-    //     if (addResponse?.data) {
-    //         todoDispatcher({ type: "add", todos: addResponse.data });
-    //     }
-    // })
-
-    const [updatedTodo, updateTodoResource] = useResource((todo) => ({
-        url: `/todos/${todo.id}`,
-        method: 'put',
-        data: todo
+        data: todo,
+        headers: { Authorization: `${state?.user?.access_token}` }
     }));
+
+    useEffect(() => {
+        if (addResponse.isLoading === false && addResponse?.data) {
+            dispatcher({
+                type: "ADD",
+                todo: addResponse.data?.todo
+            });
+        }
+    }, [addResponse]);
+
+    const [updatedResponse, updateTodoResource] = useResource((todo) => ({
+        url: `/todo/${todo._id}`,
+        method: 'put',
+        data: todo,
+        headers: { Authorization: `${state.user.access_token}` }
+    }));
+
+    useEffect(() => {
+        if (updatedResponse.isLoading === false && updatedResponse?.data) {
+            dispatcher({
+                type: "UPDATE",
+                todo: updatedResponse.data
+            })
+        };
+    }, [updatedResponse]);
 
     const [deleteResponse, deleteTodoResource] = useResource((id) => ({
-        url: `/todos/${id}`,
-        method: 'delete'
+        url: `/todo/${id}`,
+        method: 'delete',
+        headers: { Authorization: `${state.user.access_token}` }
     }));
 
+    useEffect(() => {
+        if (deleteResponse.isLoading === false && deleteResponse?.data) {
+            dispatcher({
+                type: "DELETE_TODO",
+                id: deleteResponse.data.id
+            })
+        };
 
-
+    }, [deleteResponse]);
 
 
     const navigate = useNavigate();
-
-    const todoReducer = (todos, action) => {
-        switch (action.type) {
-            case "init":
-                return [...todos, ...action.todos]
-            case "add":
-                return [...todos, action.todo];
-            case "update":
-                const listTodos = todos.map((obj) => {
-                    if (obj.id === action.todo.id) {
-                        return action.todo;
-                    }
-                    return obj;
-                })
-                return [...listTodos];
-            case "delete":
-                const list = [...todos.slice(0, action.index), ...todos.slice(action.index + 1)]
-                return [...list];
-            default:
-                return todos;
-        }
-
-    }
-
-    const [todos, todoDispatcher] = useReducer(todoReducer, []);
 
     const addTodo = (e) => {
         e.preventDefault();
 
         //Creating todo object
         const temp = {
-            "name": todo,
-            "author": author,
+            "title": todo,
             "description": description,
-            "isCompleted": false,
-            "dateCreated": new Date().toLocaleString(),
-            "dateComplete": null
+            "isCompleted": false
         }
 
         addNewTodo(temp);
-
-        if (addResponse?.data) {
-            //Calling todo dispatcher to add todo in global list
-            todoDispatcher({ type: "add", todos: addResponse.data });
-        }
 
         //Resetting todo form
         setTodo('');
@@ -113,18 +115,15 @@ function Home({ activeUser, processLogout }) {
     }
 
     const logout = () => {
-        stateContext.userDispatch({ type: "logout" });
-        alert("You have succesfully logged out...!!!");
-        navigate("/");
+        dispatcher({ type: "LOGOUT" });
+        dispatcher({ type: "CLEAR_TODOS" });
     }
 
     useEffect(() => {
-        getTodos();
-        if (!stateContext?.activeUser?.email) {
+        if (!state?.user?.access_token) {
             navigate("/");
         }
-
-    }, [todos, activeUser, navigate, addResponse, updatedTodo, deleteResponse]);
+    })
 
     return (
         <div className="Home wrapper">
@@ -148,16 +147,16 @@ function Home({ activeUser, processLogout }) {
                             </div>
                         </form>
                         {
-                            todosResponse?.data?.map ? todosResponse.data.map((todo, i) => {
+                            todos.map ? todos.map((todo, i) => {
                                 return <div key={todo.author + "_" + i} className="card">
                                     <div className="row">
                                         <div className="col-1"><input type="checkbox" checked={todo.isCompleted} onChange={(e) => updateTodo(e, i, e.target.checked, todo)} /></div>
                                         <div className="col-9">
                                             <div className="row">
-                                                <span className="col-4">Title: </span><div className="col">{todo.name}</div>
+                                                <span className="col-4">Title: </span><div className="col">{todo.title}</div>
                                             </div>
                                             <div className="row">
-                                                <span className="col-4">Author: </span><div className="col">{todo.author}</div>
+                                                <span className="col-4">Author: </span><div className="col">{user.username}</div>
                                             </div>
                                             <div className="row">
                                                 <span className="col-4">Description: </span><div className="col">{todo.description}</div>
@@ -173,7 +172,7 @@ function Home({ activeUser, processLogout }) {
                                             </div>
                                         </div>
                                         <div className="col-1">
-                                            <button type="button" className="btn btn-primary d-flex" onClick={(e) => deleteTodo(e, i, todo.id)} placeholder="Delete" >Delete</button>
+                                            <button type="button" className="btn btn-primary d-flex" onClick={(e) => deleteTodo(e, i, todo._id)} placeholder="Delete" >Delete</button>
                                         </div>
                                     </div>
                                 </div>
